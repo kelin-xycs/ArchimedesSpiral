@@ -1,0 +1,285 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title>阿基米德螺线</title>
+    <script type="text/javascript">
+
+        var _p;     //  ρ 
+        var _q;     //  θ 初始值
+        var _q2;    //  θ 结束值
+
+        var _Pi = 3.1415926;
+
+        var _stepInterval;
+        var _stepLength;
+
+        var _pV;
+       
+        var _ox = 510;
+        var _oy = 310;
+
+        var _trackPoints;
+
+        var _isStarted;
+
+        function clearCanvas()  
+        {  
+            var c=document.getElementById("myCanvas");
+            var cxt = c.getContext("2d");
+            cxt.clearRect(0, 0, c.width, c.height);  
+        }  
+
+        function drawXY() {
+
+            var c=document.getElementById("myCanvas");
+            var cxt = c.getContext("2d");
+            cxt.beginPath();
+            cxt.moveTo(10, _oy);
+            cxt.lineTo(1010, _oy);
+            cxt.moveTo(_ox, 10);
+            cxt.lineTo(_ox, 610);
+            cxt.strokeStyle = "blue";
+            cxt.stroke();
+        }
+
+        function drawP() {
+
+            var point = _trackPoints[_trackPoints.length - 1];
+
+            var c=document.getElementById("myCanvas");
+            var cxt = c.getContext("2d");
+            cxt.beginPath();
+            cxt.moveTo(_ox, _oy);
+            cxt.lineTo(point.x, point.y);
+            cxt.strokeStyle = 'blue';
+            cxt.stroke();
+        }
+
+        function OnLoad() {
+
+            drawXY();
+        }
+
+        function btnPrepare_Click() {
+
+            if (_isStarted) {
+
+                alert("已经在演示中，请先停止再重新开始。");
+                return;
+            }
+
+            _p = parseFloat(document.getElementById("txtP").value);
+            _q = parseFloat(document.getElementById("txtQ1").value);
+            _q2 = parseFloat(document.getElementById("txtQ2").value);
+            _pV = parseFloat(document.getElementById("txtPv").value);
+
+            if (isNaN(_p) || _p <= 0)
+            {
+                alert("极径ρ初始值 应填写 正数 。");
+                return;
+            }
+
+            if (isNaN(_q))
+            {
+                alert("极角θ初始值 应填写数字 。");
+                return;
+            }
+
+            if (isNaN(_q2))
+            {
+                alert("极角θ结束值 应填写数字 。");
+                return;
+            }
+
+            if (_q > _q2)
+            {
+                alert("极角θ初始值 应小于 结束值 。");
+                return;
+            }
+
+            if (isNaN(_pV) || _pV <= 0)
+            {
+                alert("极径ρ增长速度 应填写 正数 。");
+                return;
+            }
+
+            _stepInterval = parseFloat(document.getElementById("txtStepInterval").value);
+
+            if (isNaN(_stepInterval) || _stepInterval <= 0)
+            {
+                alert("步进周期 应填写 正数 。");
+                return;
+            }
+
+            _stepLength = parseFloat(document.getElementById("txtStepLength").value);
+
+            if (isNaN(_stepLength) || _stepLength <= 0)
+            {
+                alert("步进步长 应填写 正数 。");
+                return;
+            }
+
+            _trackPoints = [];
+
+            _trackPoints[0] = GetPoint(_q, _p);
+
+            clearCanvas();
+
+            drawXY();
+            drawP();
+        }
+
+        function btnStart_Click() {
+
+            if (_isStarted) {
+
+                alert("已经在演示中。");
+
+                return;
+            }
+
+            if (!_trackPoints) {
+
+                alert("请先预备再开始。");
+
+                return;
+            }
+
+            _isStarted = true;
+
+            nextFrame();
+        }
+
+        function btnStop_Click() {
+
+            _isStarted = false;
+        }
+
+        function nextFrame() {
+
+            if (!_isStarted)
+                return;
+
+            if (_q > _q2)
+            {
+                _isStarted = false;
+                return;
+            }
+                
+            Calculate();
+
+            clearCanvas();
+
+            drawXY();
+            drawTrack();
+            drawP();
+
+            window.setTimeout(nextFrame, _stepInterval);
+        }
+
+        function Calculate() {
+
+
+            _p += _pV;
+            _q += _stepLength / _p;
+
+            var point;
+
+            if (_q < _Pi * 2)
+            {
+                point = GetPoint(_q, _p);
+            }
+            else
+            {
+                let a = _q / (_Pi * 2);
+                let b = parseInt(a);
+
+                let q = (a - b) * _Pi * 2;
+
+                point = GetPoint(q, _p);
+            }
+
+            _trackPoints[_trackPoints.length] = point;
+
+        }
+
+        function GetPoint(q, p) {
+
+
+            var x = p * Math.abs(Math.cos(q));
+            var y = p * Math.abs(Math.sin(q));
+
+            if (q <= _Pi / 2) {
+
+                return { "x" : _ox + x, "y" : _oy - y };
+            }
+            
+            q = q - _Pi / 2;
+
+            if (q <= _Pi / 2) {
+
+                return { "x" : _ox - x, "y" : _oy - y };
+            }
+
+            q = q - _Pi / 2;
+
+            if (q <= _Pi / 2) {
+
+                return { "x" : _ox - x, "y" : _oy + y };
+            }
+
+            q = q - _Pi / 2;
+
+            return { "x" : _ox + x, "y" : _oy + y };
+
+        }
+
+        function drawTrack() {
+
+            var canvas =document.getElementById("myCanvas");
+            var context = canvas.getContext("2d");
+
+            context.beginPath();
+            context.strokeStyle = "red";
+
+            for (let i = 0; i < _trackPoints.length - 1; i++) {
+
+                let point = _trackPoints[i];
+
+                context.strokeRect(point.x, point.y, 1, 1);
+            }
+
+        }
+
+        function btnCanvasSize_Click() {
+
+            var canvas = document.getElementById("myCanvas");
+
+            var width = parseFloat(document.getElementById("txtCanvasWidth").value);
+            var height = parseFloat(document.getElementById("txtCanvasHeight").value);
+
+            canvas.width = width;
+            canvas.height = height;
+        }
+    </script>
+</head>
+<body onload="OnLoad();">
+
+    极径ρ初始值 ：   <input id="txtP" value="40" /><br /> 像素
+    极角θ范围 ：  <input id="txtQ1" value="0.5" /> ~ <input id="txtQ2" value="35" /><br /> 弧度
+
+    步进周期： <input id="txtStepInterval" value="200" /> 毫秒 <br />
+    步进步长： <input id="txtStepLength" value="5" /> 像素<br />
+
+    极径ρ增长速度 ：   <input id="txtPv" value="0.5" /> 像素/步进周期<br />
+    <br />
+    <input type="button" value="预备" onclick="btnPrepare_Click();" style="width:200px" />
+    <input type="button" value="开始" onclick="btnStart_Click();" style="width:200px" />
+    <input type="button" value="停止" onclick="btnStop_Click();" style="width:200px" /> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 停止后可以点 开始 继续
+    <br /><br />
+    演示画面大小： <input id="txtCanvasWidth" value="2000" /> 像素 × <input id="txtCanvasHeight" value="2000" /> 像素 <input type="button" value="确定" onclick="btnCanvasSize_Click();" /><br />
+    <canvas id="myCanvas" width="2000" height="2000" style="border: 1px solid;"></canvas>
+</body>
+</html>
